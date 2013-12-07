@@ -1,4 +1,4 @@
-// Package apk provides functions for handling Android(tm) application packages
+// Package apkdig provides functions for handling Android(tm) application packages
 // (.apk files).
 package apkdig
 
@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 )
 
+// The APK type handles opening Android application packages.
 type APK struct {
 	ZipFile   *zip.ReadCloser
 	FileNames []string
