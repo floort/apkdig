@@ -13,6 +13,7 @@ type DEX struct {
 	FieldIds  []FieldIdItem
 	MethodIds []MethodIdItem
 	ClassDefs []ClassDefItem
+	Classes   []DexClass
 }
 
 func ReadDex(file io.ReadSeeker) (*DEX, error) {
@@ -49,5 +50,6 @@ func ReadDex(file io.ReadSeeker) (*DEX, error) {
 	if err != nil {
 		return nil, err
 	}
+	dex.parseDexClasses()
 	return dex, nil
 }
