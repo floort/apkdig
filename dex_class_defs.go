@@ -17,11 +17,10 @@ type ClassDefItem struct {
 }
 
 type DexClass struct {
-    ClassIdx        uint32
-    Name            string
-    AccessFlags     uint32
-    SourceFile      string
-    
+	ClassIdx    uint32
+	Name        string
+	AccessFlags uint32
+	SourceFile  string
 }
 
 func (dex *DEX) readClassDefs(file io.ReadSeeker) error {
@@ -31,15 +30,10 @@ func (dex *DEX) readClassDefs(file io.ReadSeeker) error {
 }
 
 func (dex *DEX) parseDexClasses() {
-    dex.Classes = make([]DexClass, len(dex.ClassDefs))
-    for n, c := range dex.ClassDefs {
-        dex.Classes[n].ClassIdx = uint32(n)
-        //dex.Classes[n].Name = dex.Strings[c.NameIdx]
-        dex.Classes[n].SourceFile = dex.Strings[c.SourceFileIdx]
+	dex.Classes = make([]DexClass, len(dex.ClassDefs))
+	for n, c := range dex.ClassDefs {
+		dex.Classes[n].ClassIdx = uint32(n)
+		//dex.Classes[n].Name = dex.Strings[c.NameIdx]
+		dex.Classes[n].SourceFile = dex.Strings[c.SourceFileIdx]
 	}
 }
-
-
-
-
-

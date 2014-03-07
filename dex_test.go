@@ -1,8 +1,8 @@
 package apkdig
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 func TestParseDex(t *testing.T) {
@@ -20,7 +20,7 @@ func TestParseDex(t *testing.T) {
 		t.Errorf("Could not parse dex: %v", err)
 	}
 	for n, s := range dex.Strings {
-	    fmt.Printf("%5d: %#v\n", n, s)
+		fmt.Printf("%5d: %#v\n", n, s)
 	}
 	apk.Close()
 }
