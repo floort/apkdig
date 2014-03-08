@@ -43,13 +43,6 @@ const (
  * +-----------------------------------+
  */
 
-/*       XML_START_TAG
- * +-----------------------------------+
- * | lineNumber uint32
- * | skip       uint32 = SKIP_BLOCK
- * | nsIdx      uint32
- * | 
- */
 
 
 type StringsMeta struct {
@@ -86,6 +79,23 @@ func ReadAXML(reader io.ReadSeeker) (AXML, error) {
 		case CHUNK_RESOURCEIDS:
 			fmt.Printf("@%04X[%04X]:\tCHUNK_RESOURCEIDS\n", offset, size)
 		case CHUNK_STRINGS:
+			/* +------------------------------------+
+			 * | Nstrings         uint32            |
+			 * | StyleOffsetCount uint32            |
+			 * | Flags            uint32            |
+			 * | StringDataOffset uint32            |
+			 * | flag             uint32            |
+			 * | Stylesoffset     uint32            |
+			 * | +--------------------------------+ |
+			 * | | nsIdx       uint32             | |
+			 * | | nameIdx     uint32             | |
+			 * | | valueString uint32 // Skipped  | |
+			 * | | aValueType  uint32             | |
+			 * | | aValue      uint32             | |
+			 * | +--------------------------------+ |
+			 * |   Repeat attributeCount times      |
+			 * +------------------------------------+
+			 */
 			fmt.Printf("@%04X[%04X]:\tCHUNK_STRINGS\n", offset, size)
 			binary.Read(reader, binary.LittleEndian, &axml.stringsmeta.Nstrings)
 			binary.Read(reader, binary.LittleEndian, &axml.stringsmeta.StyleOffsetCount)
