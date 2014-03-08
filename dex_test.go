@@ -19,8 +19,15 @@ func TestParseDex(t *testing.T) {
 	if err != nil {
 		t.Errorf("Could not parse dex: %v", err)
 	}
-	for n, s := range dex.Strings {
-		fmt.Printf("%5d: %#v\n", n, s)
+	fmt.Printf("%d strings in dex\n", len(dex.Strings))
+	manifestfile, err := apk.OpenFile("AndroidManifest.xml")
+	if err != nil {
+		t.Errorf("Could not open manifest: %v", err)
 	}
+	axml, err := ReadAXML(manifestfile)
+	if err != nil {
+		t.Errorf("Error parsing AXML file: %v", err)
+	}
+	fmt.Printf("%+v\n", axml)
 	apk.Close()
 }
