@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"unicode/utf16"
 )
 
 const (
@@ -30,7 +31,7 @@ const (
 	CHUNK_XML_END_NAMESPACE   = 0x00100101
 	CHUNK_XML_END_TAG         = 0x00100103
 	CHUNK_XML_START_NAMESPACE = 0x00100100
-	CHUNK_XML_START_TAG       = 0x00100102 	
+	CHUNK_XML_START_TAG       = 0x00100102
 	CHUNK_XML_TEXT            = 0x00100104
 	UTF8_FLAG                 = 0x00000100
 	SKIP_BLOCK                = 0xFFFFFFFF
@@ -59,15 +60,13 @@ const (
  * +-----------------------------------+
  */
 
-
-
 type StringsMeta struct {
 	Nstrings         uint32
 	StyleOffsetCount uint32
 	Flags            uint32
 	StringDataOffset uint32
 	Stylesoffset     uint32
-	DataOffset		[]uint32
+	DataOffset       []uint32
 }
 
 type AXML struct {
@@ -108,10 +107,9 @@ func ReadAXML(reader io.ReadSeeker) (AXML, error) {
 			 * | +--------------------------------+ |
 			 * |       Repeat Nstrings times        |
 			 * +------------------------------------+
-			 * | 
+			 * |
 			 * +------------------------------------+
 			 */
-			fmt.Printf("@%04X[%04X]:\tCHUNK_STRINGS\n", offset, size)
 			binary.Read(reader, binary.LittleEndian, &axml.stringsmeta.Nstrings)
 			binary.Read(reader, binary.LittleEndian, &axml.stringsmeta.StyleOffsetCount)
 			binary.Read(reader, binary.LittleEndian, &axml.stringsmeta.Flags)
@@ -121,6 +119,23 @@ func ReadAXML(reader io.ReadSeeker) (AXML, error) {
 				var offset uint32
 				binary.Read(reader, binary.LittleEndian, &offset)
 				axml.stringsmeta.DataOffset = append(axml.stringsmeta.DataOffset, offset)
+			}
+			if 0 != (axml.stringsmeta.Flags & UTF8_FLAG) {
+				// String will be in UTF-8 encoding
+				var s string
+				binary.Read(reader, binary.LittleEndian, &s)
+			} else {
+				// String will be in UTF-16LE encoding
+				for i := uint32(0); i < axml.stringsmeta.Nstrings; i++ {
+					var size uint16
+					binary.Read(reader, binary.LittleEndian, &size)
+					stringbytes := make([]uint16, size)
+					binary.Read(reader, binary.LittleEndian, &stringbytes)
+					axml.Strings = append(axml.Strings, string(utf16.Decode(stringbytes)))
+					if i != axml.stringsmeta.Nstrings-1 {
+						reader.Seek(2, 1)
+					}
+				}
 			}
 		case CHUNK_XML_END_NAMESPACE:
 			fmt.Printf("@%04X[%04X]:\tCHUNK_XML_END_NAMESPACE\n", offset, size)
@@ -148,7 +163,6 @@ func ReadAXML(reader io.ReadSeeker) (AXML, error) {
 			 * +------------------------------------+
 			 */
 
-			fmt.Printf("@%04X[%04X]:\tCHUNK_XML_START_TAG\n", offset, size)
 			var lineNumber, skip, nsIdx, nameIdx, flag uint32
 			var attributeCount uint
 			binary.Read(reader, binary.LittleEndian, &lineNumber)
@@ -165,6 +179,7 @@ func ReadAXML(reader io.ReadSeeker) (AXML, error) {
 				return axml, fmt.Errorf("Expected flag 0x00140014, found %08X at %08X\n", flag, offset+4*6)
 			}
 			binary.Read(reader, binary.LittleEndian, &attributeCount)
+			fmt.Printf("Line %d\t<%s>\n", lineNumber, axml.Strings[nameIdx])
 		case CHUNK_XML_TEXT:
 			fmt.Printf("@%04X[%04X]:\tCHUNK_XML_TEXT\n", offset, size)
 		}

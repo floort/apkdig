@@ -44,6 +44,6 @@ func TestParseDex(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error parsing AXML file: %v", err)
 	}
-	fmt.Printf("%+v\n", axml)
+	fmt.Printf("%#v\n", axml)
 	apk.Close()
 }
