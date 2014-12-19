@@ -17,7 +17,9 @@ package apkdig
  */
 
 import (
+	"bytes"
 	"encoding/binary"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -74,9 +76,14 @@ type AXML struct {
 	size        uint32
 	stringsmeta StringsMeta
 	Strings     []string
+	XML         string
 }
 
 func ReadAXML(reader io.ReadSeeker) (AXML, error) {
+	xmlbuffer := new(bytes.Buffer)
+	xmlencoder := xml.NewEncoder(xmlbuffer)
+	xmlencoder.Indent("", "  ")
+	namestack := make([]xml.Name, 0, 10)
 	axml := AXML{}
 	binary.Read(reader, binary.LittleEndian, &axml.Header)
 	if axml.Header != CHUNK_AXML_FILE {
@@ -92,7 +99,7 @@ func ReadAXML(reader io.ReadSeeker) (AXML, error) {
 		default:
 			return axml, fmt.Errorf("Unkown chunk type: %X", blocktype)
 		case CHUNK_RESOURCEIDS:
-			fmt.Printf("@%04X[%04X]:\tCHUNK_RESOURCEIDS\n", offset, size)
+			//fmt.Printf("@%04X[%04X]:\tCHUNK_RESOURCEIDS\n", offset, size)
 		case CHUNK_STRINGS:
 			/* +------------------------------------+
 			 * | Nstrings         uint32            |
@@ -133,21 +140,23 @@ func ReadAXML(reader io.ReadSeeker) (AXML, error) {
 					binary.Read(reader, binary.LittleEndian, &stringbytes)
 					axml.Strings = append(axml.Strings, string(utf16.Decode(stringbytes)))
 					if i != axml.stringsmeta.Nstrings-1 {
-						reader.Seek(2, 1)
+						reader.Seek(2, 1) // Skip 0x0000 on all but the last string
 					}
 				}
 			}
 		case CHUNK_XML_END_NAMESPACE:
-			fmt.Printf("@%04X[%04X]:\tCHUNK_XML_END_NAMESPACE\n", offset, size)
+			//fmt.Printf("@%04X[%04X]:\tCHUNK_XML_END_NAMESPACE\n", offset, size)
 		case CHUNK_XML_END_TAG:
-			fmt.Printf("@%04X[%04X]:\tCHUNK_XML_END_TAG\n", offset, size)
+			var end xml.Name
+			end, namestack = namestack[len(namestack)-1], namestack[:len(namestack)-1]
+			xmlencoder.EncodeToken(xml.EndElement{Name: end})
 		case CHUNK_XML_START_NAMESPACE:
-			fmt.Printf("@%04X[%04X]:\tCHUNK_XML_START_NAMESPACE\n", offset, size)
+			//fmt.Printf("@%04X[%04X]:\tCHUNK_XML_START_NAMESPACE\n", offset, size)
 		case CHUNK_XML_START_TAG:
 			/* +------------------------------------+
 			 * | lineNumber     uint32              |
 			 * | skip           uint32 = SKIP_BLOCK |
-			 * | nsIdx          uint32              |
+			 * | nsIdx          int32               |
 			 * | nameIdx        uint32              |
 			 * | flag           uint32 = 0x00140014 |
 			 * | attributeCount uint16              |
@@ -163,8 +172,9 @@ func ReadAXML(reader io.ReadSeeker) (AXML, error) {
 			 * +------------------------------------+
 			 */
 
-			var lineNumber, skip, nsIdx, nameIdx, flag uint32
-			var attributeCount uint
+			var lineNumber, skip, nameIdx, flag uint32
+			var nsIdx int32
+			var attributeCount uint16
 			binary.Read(reader, binary.LittleEndian, &lineNumber)
 			binary.Read(reader, binary.LittleEndian, &skip)
 			if skip != SKIP_BLOCK {
@@ -179,12 +189,40 @@ func ReadAXML(reader io.ReadSeeker) (AXML, error) {
 				return axml, fmt.Errorf("Expected flag 0x00140014, found %08X at %08X\n", flag, offset+4*6)
 			}
 			binary.Read(reader, binary.LittleEndian, &attributeCount)
-			fmt.Printf("Line %d\t<%s>\n", lineNumber, axml.Strings[nameIdx])
+			name := xml.Name{Local: axml.Strings[nameIdx]}
+			if nsIdx > -1 {
+				name.Space = axml.Strings[nsIdx]
+			}
+			token := xml.StartElement{
+				Name: name,
+			}
+			namestack = append(namestack, name)
+			reader.Seek(6, 1)
+			for i := uint16(0); i < attributeCount; i++ {
+				var ansidx, anameidx, avaluestring, avaluetype, avalue int32
+				binary.Read(reader, binary.LittleEndian, &ansidx)
+				binary.Read(reader, binary.LittleEndian, &anameidx)
+				binary.Read(reader, binary.LittleEndian, &avaluestring)
+				binary.Read(reader, binary.LittleEndian, &avaluetype)
+				binary.Read(reader, binary.LittleEndian, &avalue)
+				name := xml.Name{Local: axml.Strings[anameidx]}
+				if ansidx > -1 {
+					name.Space = axml.Strings[ansidx]
+				}
+				tag := xml.Attr{Name: name}
+				if avaluestring > -1 {
+					tag.Value = axml.Strings[avaluestring]
+				}
+				token.Attr = append(token.Attr, tag)
+			}
+			xmlencoder.EncodeToken(token)
 		case CHUNK_XML_TEXT:
 			fmt.Printf("@%04X[%04X]:\tCHUNK_XML_TEXT\n", offset, size)
 		}
 		offset += size
 		reader.Seek(int64(offset), 0)
 	}
+	xmlencoder.Flush()
+	axml.XML = xmlbuffer.String()
 	return axml, nil
 }
