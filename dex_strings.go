@@ -20,6 +20,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+
+	"github.com/floort/apkdig/leb128"
 )
 
 type StringIdItem uint32
@@ -37,7 +39,7 @@ func (dex *DEX) readStrings(file io.ReadSeeker) error {
 			return errors.New("String offset outside of data block")
 		}
 		file.Seek(int64(idx), 0)
-		size, err := ULEB128Read(file)
+		size, err := leb128.ULEB128Read(file)
 		if err != nil {
 			return err
 		}

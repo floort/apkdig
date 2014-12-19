@@ -1,4 +1,4 @@
-package apkdig
+package leb128
 
 /*
  * Copyright (c) 2014 Floor Terra <floort@gmail.com>
@@ -17,23 +17,17 @@ package apkdig
  */
 
 import (
-	"io"
+	"bytes"
+	"testing"
 )
 
-// https://en.wikipedia.org/wiki/LEB128
-func ULEB128Read(file io.Reader) (uint32, error) {
-	var result uint32 = 0
-	var shift uint32 = 0
-	buf := make([]byte, 1, 1)
-	for {
-		_, err := file.Read(buf)
-		if err != nil {
-			return result, err
-		}
-		result |= ((uint32(buf[0]) & 127) << shift)
-		if (uint32(buf[0]) & 128) == 0 {
-			return result, nil
-		}
-		shift += 7
+func TestReadUleb(t *testing.T) {
+	buf := bytes.NewBuffer([]byte{179, 173, 71})
+	val, err := ULEB128Read(buf)
+	if err != nil {
+		t.Errorf(err)
+	}
+	if val != 1169075 {
+		t.Errorf("Wrong value. Got %d, expected 1169075.", val)
 	}
 }
