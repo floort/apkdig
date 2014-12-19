@@ -23,6 +23,7 @@ import (
 
 	"github.com/floort/apkdig/apk"
 	"github.com/floort/apkdig/axml"
+	"github.com/floort/apkdig/dex"
 )
 
 var COMMANDS = map[string](func([]string) error){}
@@ -79,11 +80,48 @@ func Manifest(args []string) (err error) {
 	}
 }
 
+func DexStrings(args []string) (err error) {
+	if len(args) == 0 {
+		return ERR_NOARGS
+	}
+	if len(args) == 1 {
+		return errors.New("No file specified.")
+	}
+	if len(args) > 2 {
+		return ERR_TOOMANYARGS
+	}
+	if args[1] == "-h" {
+		// Print help information
+		fmt.Println(args[0], "-h\t\tPrint usage.")
+		fmt.Println(args[0], "[filename]\tPrint strings in dex file.")
+		return nil
+	} else {
+		a, err := apk.OpenAPK(args[1])
+		if err != nil {
+			return err
+		}
+		defer a.Close()
+		dexfile, err := a.OpenFile("classes.dex")
+		if err != nil {
+			return err
+		}
+		dx, err := dex.ReadDex(dexfile)
+		if err != nil {
+			return err
+		}
+		for i := range dx.Strings {
+			fmt.Printf("%v\n", dx.Strings[i])
+		}
+		return nil
+	}
+}
+
 func main() {
 	// Fill Commands table
 	COMMANDS["?"] = Help
 	COMMANDS["help"] = Help
 	COMMANDS["manifest"] = Manifest
+	COMMANDS["dexstrings"] = DexStrings
 	if len(os.Args) == 1 {
 		// No arguments are given; print help
 		_ = Help([]string{"help"})
