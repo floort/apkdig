@@ -1,4 +1,4 @@
-package apkdig
+package dex
 
 /*
  * Copyright (c) 2014 Floor Terra <floort@gmail.com>
@@ -21,14 +21,14 @@ import (
 	"io"
 )
 
-type FieldIdItem struct {
+type MethodIdItem struct {
 	ClassIdx uint16
-	TypeIdx  uint16
+	ProtoIdx uint16
 	NameIdx  uint32
 }
 
-func (dex *DEX) readFieldIds(file io.ReadSeeker) error {
-	file.Seek(int64(dex.Header.FieldIdsOff), 0)
-	dex.FieldIds = make([]FieldIdItem, dex.Header.FieldIdsSize)
-	return binary.Read(file, binary.LittleEndian, &dex.FieldIds)
+func (dex *DEX) readMethodIds(file io.ReadSeeker) error {
+	file.Seek(int64(dex.Header.MethodIdsOff), 0)
+	dex.MethodIds = make([]MethodIdItem, dex.Header.MethodIdsSize)
+	return binary.Read(file, binary.LittleEndian, &dex.MethodIds)
 }

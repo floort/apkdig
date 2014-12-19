@@ -1,4 +1,4 @@
-package apkdig
+package dex
 
 /*
  * Copyright (c) 2014 Floor Terra <floort@gmail.com>

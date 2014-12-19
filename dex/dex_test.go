@@ -1,4 +1,4 @@
-package apkdig
+package dex
 
 /*
  * Copyright (c) 2014 Floor Terra <floort@gmail.com>
@@ -16,13 +16,37 @@ package apkdig
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-import "testing"
+import (
+	"fmt"
+	"testing"
 
-func TestOpenAPK(t *testing.T) {
-	testfile := "tests/Orbot-release-12.0.3.apk"
-	apk, err := OpenAPK(testfile)
+	"github.com/floort/apkdig/apk"
+	"github.com/floort/apkdig/axml"
+)
+
+func TestParseDex(t *testing.T) {
+	testfile := "../tests/Orbot-release-12.0.3.apk"
+	a, err := apk.OpenAPK(testfile)
 	if err != nil {
 		t.Errorf("Could not open %v: %v", testfile, err)
 	}
-	apk.Close()
+	file, err := a.OpenFile("classes.dex")
+	if err != nil {
+		t.Errorf("Could not open classes.dex: %v", err)
+	}
+	_, err = ReadDex(file)
+	if err != nil {
+		t.Errorf("Could not parse dex: %v", err)
+	}
+
+	manifestfile, err := a.OpenFile("AndroidManifest.xml")
+	if err != nil {
+		t.Errorf("Could not open manifest: %v", err)
+	}
+	manifest, err := axml.ReadAXML(manifestfile)
+	if err != nil {
+		t.Errorf("Error parsing AXML file: %v", err)
+	}
+	fmt.Println(manifest.XML)
+	a.Close()
 }

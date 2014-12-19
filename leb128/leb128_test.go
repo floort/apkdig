@@ -25,7 +25,7 @@ func TestReadUleb(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{179, 173, 71})
 	val, err := ULEB128Read(buf)
 	if err != nil {
-		t.Errorf(err)
+		t.Errorf("Error reading uleb128: %s", err)
 	}
 	if val != 1169075 {
 		t.Errorf("Wrong value. Got %d, expected 1169075.", val)

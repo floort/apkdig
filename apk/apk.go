@@ -1,6 +1,6 @@
 // Package apkdig provides functions for handling Android(tm) application packages
 // (.apk files).
-package apkdig
+package apk
 
 /*
  * Copyright (c) 2014 Floor Terra <floort@gmail.com>
