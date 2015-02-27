@@ -43,10 +43,10 @@ func TestParseDex(t *testing.T) {
 	if err != nil {
 		t.Errorf("Could not open manifest: %v", err)
 	}
-	manifest, err := axml.ReadAXML(manifestfile)
+	manifest, err := axml.ReadAxml(manifestfile)
 	if err != nil {
 		t.Errorf("Error parsing AXML file: %v", err)
 	}
-	fmt.Println(manifest.XML)
+	fmt.Printf("%#v\n", manifest)
 	a.Close()
 }

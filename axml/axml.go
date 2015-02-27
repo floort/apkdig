@@ -37,6 +37,25 @@ const (
 	CHUNK_XML_TEXT            = 0x00100104
 	UTF8_FLAG                 = 0x00000100
 	SKIP_BLOCK                = 0xFFFFFFFF
+	TYPE_FIRST_COLOR_INT      = 28
+	TYPE_FIRST_INT            = 16
+	TYPE_FRACTION             = 6
+	TYPE_INT_BOOLEAN          = 18
+	TYPE_INT_COLOR_ARGB4      = 30
+	TYPE_INT_COLOR_ARGB8      = 28
+	TYPE_INT_COLOR_RGB4       = 31
+	TYPE_INT_COLOR_RGB8       = 29
+	TYPE_INT_DEC              = 16
+	TYPE_INT_HEX              = 17
+	TYPE_LAST_COLOR_INT       = 31
+	TYPE_LAST_INT             = 31
+	TYPE_NULL                 = 0x00000000
+	TYPE_REFERENCE            = 0x01000000
+	TYPE_ATTRIBUTE            = 0x02000000
+	TYPE_STRING               = 0x03000000
+	TYPE_FLOAT                = 0x04000000
+	TYPE_DIMENSION            = 0x05000000
+
 )
 
 /*          AXML Data structure
@@ -62,6 +81,44 @@ const (
  * +-----------------------------------+
  */
 
+type Axml struct {
+	Header uint32
+	FileSize uint32
+	Blocks []GenericBlock
+}
+
+func ReadAxml(reader io.ReadSeeker) (axml Axml, err error) {
+	binary.Read(reader, binary.LittleEndian, &axml.Header)
+	if axml.Header != CHUNK_AXML_FILE {
+		return axml, errors.New("AXML file has wrong header")
+	}
+	binary.Read(reader, binary.LittleEndian, &axml.FileSize)
+	var blocktype, size uint32
+	for offset := int64(8); offset < int64(axml.FileSize); {
+		binary.Read(reader, binary.LittleEndian, &blocktype)
+		binary.Read(reader, binary.LittleEndian, &size)
+		var b GenericBlock
+		switch blocktype {
+		default:
+			return axml, fmt.Errorf("Unkown Axml blocktype: %08X", blocktype)
+		case CHUNK_RESOURCEIDS:
+			b, err = ReadResourceIdsBlock(reader, size, offset)
+		case CHUNK_STRINGS:
+			b, err = ReadStringsBlock(reader, size, offset)
+		}
+		if err != nil {
+			return axml, err
+		}
+		fmt.Printf("%#v\n", b)
+		axml.Blocks = append(axml.Blocks, b)
+		offset += int64(size)
+		reader.Seek(offset, 0)
+	}
+	return axml, nil
+}
+
+
+
 type StringsMeta struct {
 	Nstrings         uint32
 	StyleOffsetCount uint32
@@ -71,11 +128,20 @@ type StringsMeta struct {
 	DataOffset       []uint32
 }
 
+type Attribute struct {
+	ansidx uint32
+	anameidx uint32
+	avaluestring uint32
+	avaluetype uint32
+	avalue int32
+}
+
 type AXML struct {
 	Header      uint32
 	size        uint32
 	stringsmeta StringsMeta
 	Strings     []string
+	Resources   []uint32
 	XML         string
 }
 
@@ -99,7 +165,14 @@ func ReadAXML(reader io.ReadSeeker) (AXML, error) {
 		default:
 			return axml, fmt.Errorf("Unkown chunk type: %X", blocktype)
 		case CHUNK_RESOURCEIDS:
-			//fmt.Printf("@%04X[%04X]:\tCHUNK_RESOURCEIDS\n", offset, size)
+			fmt.Printf("@%04X[%04X]:\tCHUNK_RESOURCEIDS\n", offset, size)
+			var id uint32
+			nids := uint32(size/4 - 2)
+			for i := uint32(0); i < nids; i++ {
+				binary.Read(reader, binary.LittleEndian, &id)
+				axml.Resources = append(axml.Resources, id)
+			}
+			fmt.Printf("%#v\n", axml.Resources)
 		case CHUNK_STRINGS:
 			/* +------------------------------------+
 			 * | Nstrings         uint32            |
@@ -151,7 +224,12 @@ func ReadAXML(reader io.ReadSeeker) (AXML, error) {
 			end, namestack = namestack[len(namestack)-1], namestack[:len(namestack)-1]
 			xmlencoder.EncodeToken(xml.EndElement{Name: end})
 		case CHUNK_XML_START_NAMESPACE:
-			//fmt.Printf("@%04X[%04X]:\tCHUNK_XML_START_NAMESPACE\n", offset, size)
+			/* +--------------------------------------+
+			 * | lineNumber     uint32
+			 * | skip           uint32 = SKIP_BLOCK
+			 * |
+			 */
+			fmt.Printf("@%04X[%04X]:\tCHUNK_XML_START_NAMESPACE\n", offset, size)
 		case CHUNK_XML_START_TAG:
 			/* +------------------------------------+
 			 * | lineNumber     uint32              |
@@ -199,21 +277,26 @@ func ReadAXML(reader io.ReadSeeker) (AXML, error) {
 			namestack = append(namestack, name)
 			reader.Seek(6, 1)
 			for i := uint16(0); i < attributeCount; i++ {
-				var ansidx, anameidx, avaluestring, avaluetype, avalue int32
-				binary.Read(reader, binary.LittleEndian, &ansidx)
-				binary.Read(reader, binary.LittleEndian, &anameidx)
-				binary.Read(reader, binary.LittleEndian, &avaluestring)
-				binary.Read(reader, binary.LittleEndian, &avaluetype)
-				binary.Read(reader, binary.LittleEndian, &avalue)
-				name := xml.Name{Local: axml.Strings[anameidx]}
-				if ansidx > -1 {
-					name.Space = axml.Strings[ansidx]
+				var attr Attribute
+				binary.Read(reader, binary.LittleEndian, &attr.ansidx)
+				binary.Read(reader, binary.LittleEndian, &attr.anameidx)
+				binary.Read(reader, binary.LittleEndian, &attr.avaluestring)
+				binary.Read(reader, binary.LittleEndian, &attr.avaluetype)
+				binary.Read(reader, binary.LittleEndian, &attr.avalue)
+				fmt.Printf("%#v\n", attr)
+				switch attr.avaluetype & 0x7FFF0000 {
+				default:
+					fmt.Printf("%08X\n", attr.avaluetype&0x7FFF0000)
+				case TYPE_NULL:
+					fmt.Printf("TYPE_NULL")
+				case TYPE_STRING:
+					fmt.Printf("%08X\n", attr.avaluetype&0x7FFF0000)
+					name := xml.Name{Local: axml.Strings[attr.anameidx]}
+					name.Space = axml.Strings[attr.ansidx]
+					tag := xml.Attr{Name: name}
+					tag.Value = axml.Strings[attr.avaluestring]
+					token.Attr = append(token.Attr, tag)
 				}
-				tag := xml.Attr{Name: name}
-				if avaluestring > -1 {
-					tag.Value = axml.Strings[avaluestring]
-				}
-				token.Attr = append(token.Attr, tag)
 			}
 			xmlencoder.EncodeToken(token)
 		case CHUNK_XML_TEXT:

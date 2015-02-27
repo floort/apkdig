@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest android:installLocation="0" android:versionCode="59" android:versionName="12.0.3" package="org.torproject.android" xmlns:android="http://schemas.android.com/apk/res/android">
+	
+
+	<uses-permission android:name="android.permission.INTERNET">
+</uses-permission>
+	
+
+	<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED">
+</uses-permission>
+	
+
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE">
+</uses-permission>
+	
+
+	<uses-permission android:name="android.permission.ACCESS_SUPERUSER">
+</uses-permission>
+	
+
+	<uses-sdk android:minSdkVersion="5" android:targetSdkVersion="18">
+</uses-sdk>
+	
+
+	<application android:allowBackup="false" android:allowClearUserData="true" android:configChanges="0x00000484" android:icon="@7F020075" android:label="@7F0B000D" android:name=".OrbotApp" android:persistent="true" android:theme="@7F0C0054">
+		
+
+		<activity android:configChanges="0x00000480" android:launchMode="1" android:name=".Orbot">
+			
+
+			<intent-filter>
+				
+
+				<action android:name="android.intent.action.MAIN">
+</action>
+				
+
+				<category android:name="android.intent.category.LAUNCHER">
+</category>
+				
+
+			</intent-filter>
+			
+
+			<intent-filter>
+				
+
+				<action android:name="android.intent.action.VIEW">
+</action>
+				
+
+				<category android:name="android.intent.category.DEFAULT">
+</category>
+				
+
+				<category android:name="android.intent.category.BROWSABLE">
+</category>
+				
+
+				<data android:scheme="bridge">
+</data>
+				
+
+				<data android:scheme="bridge+obfs">
+</data>
+				
+
+			</intent-filter>
+			
+
+			<intent-filter>
+				
+
+				<category android:name="android.intent.category.DEFAULT">
+</category>
+				
+
+				<action android:name="org.torproject.android.REQUEST_HS_PORT">
+</action>
+				
+
+			</intent-filter>
+			
+
+			<intent-filter>
+				
+
+				<category android:name="android.intent.category.DEFAULT">
+</category>
+				
+
+				<action android:name="org.torproject.android.START_TOR">
+</action>
+				
+
+			</intent-filter>
+			
+
+		</activity>
+		
+
+		<activity android:name=".wizard.LotsaText">
+</activity>
+		
+
+		<activity android:name=".wizard.Permissions">
+</activity>
+		
+
+		<activity android:name=".wizard.TipsAndTricks">
+</activity>
+		
+
+		<activity android:name=".wizard.ConfigureTransProxy">
+</activity>
+		
+
+		<activity android:name=".wizard.ChooseLocaleWizardActivity">
+</activity>
+		
+
+		<activity android:label="@7F0B000D" android:name=".settings.SettingsPreferences">
+</activity>
+		
+
+		<activity android:label="@7F0B000D" android:name=".settings.AppManager">
+</activity>
+		
+
+		<service android:enabled="true" android:exported="false" android:name=".service.TorService">
+			
+
+			<intent-filter>
+				
+
+				<action android:name="org.torproject.android.service.ITorService">
+</action>
+				
+
+				<action android:name="org.torproject.android.service.TOR_SERVICE">
+</action>
+				
+
+			</intent-filter>
+			
+
+		</service>
+		
+
+		<receiver android:name=".OnBootReceiver">
+			
+
+			<intent-filter>
+				
+
+				<action android:name="android.intent.action.BOOT_COMPLETED">
+</action>
+				
+
+				<category android:name="android.intent.category.HOME">
+</category>
+				
+
+			</intent-filter>
+			
+
+		</receiver>
+		
+
+	</application>
+	
+
+</manifest>
