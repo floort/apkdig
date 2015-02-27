@@ -53,7 +53,7 @@ func ReadStringsBlock(reader io.ReadSeeker, size uint32, offset int64) (b String
 	b.Type = CHUNK_STRINGS
 	b.Size = size
 	b.Offset = offset
-	reader.Seek(offset, 0)
+	reader.Seek(offset+16, 0) // Skip AxmlBlock
 	binary.Read(reader, binary.LittleEndian, &b.NStrings)
 	fmt.Printf("%#v\n", b)
 	if (b.NStrings*4) + (5*4) > size {
