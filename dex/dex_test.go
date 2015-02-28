@@ -22,6 +22,8 @@ import (
 
 	"github.com/floort/apkdig/apk"
 	"github.com/floort/apkdig/axml"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 func TestParseDex(t *testing.T) {
@@ -44,6 +46,7 @@ func TestParseDex(t *testing.T) {
 		t.Errorf("Could not open manifest: %v", err)
 	}
 	manifest, err := axml.ReadAxml(manifestfile)
+	spew.Dump(manifest)
 	if err != nil {
 		t.Errorf("Error parsing AXML file: %v", err)
 	}

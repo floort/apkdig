@@ -22,6 +22,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"io"
 	"unicode/utf16"
 )
@@ -55,7 +56,6 @@ const (
 	TYPE_STRING               = 0x03000000
 	TYPE_FLOAT                = 0x04000000
 	TYPE_DIMENSION            = 0x05000000
-
 )
 
 /*          AXML Data structure
@@ -82,9 +82,9 @@ const (
  */
 
 type Axml struct {
-	Header uint32
+	Header   uint32
 	FileSize uint32
-	Blocks []GenericBlock
+	Blocks   []GenericBlock
 }
 
 func ReadAxml(reader io.ReadSeeker) (axml Axml, err error) {
@@ -105,19 +105,27 @@ func ReadAxml(reader io.ReadSeeker) (axml Axml, err error) {
 			b, err = ReadResourceIdsBlock(reader, size, offset)
 		case CHUNK_STRINGS:
 			b, err = ReadStringsBlock(reader, size, offset)
+		case CHUNK_XML_START_NAMESPACE:
+			b, err = ReadXmlStartNamespaceBlock(reader, size, offset)
+		case CHUNK_XML_START_TAG:
+			b, err = ReadXmlStartTagBlock(reader, size, offset)
+		case CHUNK_XML_END_TAG:
+			b, err = ReadXmlEndTagBlock(reader, size, offset)
+		case CHUNK_XML_END_NAMESPACE:
+			b, err = ReadXmlEndNamespaceBlock(reader, size, offset)
 		}
 		if err != nil {
 			return axml, err
 		}
-		fmt.Printf("%#v\n", b)
+		fmt.Println("============================================================")
+		spew.Dump(b)
+		fmt.Println("============================================================")
 		axml.Blocks = append(axml.Blocks, b)
 		offset += int64(size)
 		reader.Seek(offset, 0)
 	}
 	return axml, nil
 }
-
-
 
 type StringsMeta struct {
 	Nstrings         uint32
@@ -129,11 +137,11 @@ type StringsMeta struct {
 }
 
 type Attribute struct {
-	ansidx uint32
-	anameidx uint32
+	ansidx       uint32
+	anameidx     uint32
 	avaluestring uint32
-	avaluetype uint32
-	avalue int32
+	avaluetype   uint32
+	avalue       int32
 }
 
 type AXML struct {

@@ -18,8 +18,8 @@ package axml
 
 import (
 	"encoding/binary"
-	"io"
 	"fmt"
+	"io"
 )
 
 /* +------------------------------------+
@@ -53,10 +53,9 @@ func ReadStringsBlock(reader io.ReadSeeker, size uint32, offset int64) (b String
 	b.Type = CHUNK_STRINGS
 	b.Size = size
 	b.Offset = offset
-	reader.Seek(offset+16, 0) // Skip AxmlBlock
+	reader.Seek(offset+8, 0) // Skip Type and Size
 	binary.Read(reader, binary.LittleEndian, &b.NStrings)
-	fmt.Printf("%#v\n", b)
-	if (b.NStrings*4) + (5*4) > size {
+	if (b.NStrings*4)+(5*4) > size {
 		return b, fmt.Errorf("NStrings = %ud, max: %d", b.NStrings, (size-(5*4))/4)
 	}
 	binary.Read(reader, binary.LittleEndian, &b.StyleOffsetCount)
