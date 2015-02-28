@@ -18,6 +18,7 @@ package axml
 
 import (
 	"encoding/binary"
+	"unicode/utf16"
 	"fmt"
 	"io"
 )
@@ -25,7 +26,7 @@ import (
 /* +------------------------------------+
  * | Type             uint32            |
  * | Size             uint32            |
- * | Nstrings         uint32            |
+ * | NStrings         uint32            |
  * | StyleOffsetCount uint32            |
  * | Flags            uint32            |
  * | StringDataOffset uint32            |
@@ -34,9 +35,13 @@ import (
  * | +--------------------------------+ |
  * | | DataOffset uint32              | |
  * | +--------------------------------+ |
- * |       Repeat Nstrings times        |
+ * |       Repeat NStrings times        |
  * +------------------------------------+
- * |
+ * | +--------------------------------+ |
+ * | | Size uint16                    | |
+ * | | Data [Size]byte                | |
+ * | +--------------------------------+ |
+ * |       Repeat NStrings times        |
  * +------------------------------------+
  */
 type StringsBlock struct {
@@ -47,6 +52,7 @@ type StringsBlock struct {
 	StringDataOffset uint32
 	StylesOffset     uint32
 	DataOffset       []uint32
+	Strings          []string
 }
 
 func ReadStringsBlock(reader io.ReadSeeker, size uint32, offset int64) (b StringsBlock, err error) {
@@ -66,5 +72,21 @@ func ReadStringsBlock(reader io.ReadSeeker, size uint32, offset int64) (b String
 	for i := uint32(0); i < b.NStrings; i++ {
 		binary.Read(reader, binary.LittleEndian, &b.DataOffset[i])
 	}
+	if 0 != (b.Flags & UTF8_FLAG) {
+        // String will be in UTF-8 encoding
+        return b, fmt.Errorf("Strings are encoded in UTF-8: not implemented")
+    } else {
+        // String will be in UTF-16LE encoding
+        for i := uint32(0); i < b.NStrings; i++ {
+            var size uint16
+	        binary.Read(reader, binary.LittleEndian, &size)
+	        stringbytes := make([]uint16, size)
+			binary.Read(reader, binary.LittleEndian, &stringbytes)
+		    b.Strings = append(b.Strings, string(utf16.Decode(stringbytes)))
+	        if i != b.NStrings-1 {
+			    reader.Seek(2, 1) // Skip 0x0000 on all but the last string
+			}
+	    }
+    }
 	return b, nil
 }

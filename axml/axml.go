@@ -22,7 +22,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"io"
 	"unicode/utf16"
 )
@@ -117,15 +116,23 @@ func ReadAxml(reader io.ReadSeeker) (axml Axml, err error) {
 		if err != nil {
 			return axml, err
 		}
-		fmt.Println("============================================================")
-		spew.Dump(b)
-		fmt.Println("============================================================")
 		axml.Blocks = append(axml.Blocks, b)
 		offset += int64(size)
 		reader.Seek(offset, 0)
 	}
 	return axml, nil
 }
+
+/*func (axml Axml) String() (s string) {
+    xmlbuffer := new(bytes.Buffer)
+	xmlencoder := xml.NewEncoder(xmlbuffer)
+	xmlencoder.Indent("", "  ")
+	for b, i := range axml.Blocks {
+	    if b.Type == CHUNK_XML_START_TAG {
+	        
+	    }
+	}
+}*/
 
 type StringsMeta struct {
 	Nstrings         uint32
