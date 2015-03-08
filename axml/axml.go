@@ -129,7 +129,7 @@ func ReadAxml(reader io.ReadSeeker) (axml Axml, err error) {
 	xmlencoder.Indent("", "  ")
 	for b, i := range axml.Blocks {
 	    if b.Type == CHUNK_XML_START_TAG {
-	        
+
 	    }
 	}
 }*/
