@@ -59,103 +59,17 @@ func (dex *DEX) readHeader(file io.ReadSeeker) error {
 		return err
 	}
 	dex.Header = new(DEXHeader)
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.Magic)
+	err = binary.Read(file, binary.LittleEndian, dex.Header)
 	if err != nil {
 		return err
 	}
+	// Check magic marker
 	if dex.Header.Magic != DEX_FILE_MAGIC {
 		return errors.New("Magic header does not match.")
 	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.Checksum)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.Signature)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.FileSize)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.HeaderSize)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.EndianTag)
-	if err != nil {
-		return err
-	}
+	// Check endianness
 	if dex.Header.EndianTag != ENDIAN_CONSTANT {
 		return errors.New("File endianness does not match specifications.")
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.LinkSize)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.LinkOff)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.MapOff)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.StringIdsSize)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.StringIdsOff)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.TypeIdsSize)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.TypeIdsOff)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.ProtoIdsSize)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.ProtoIdsOff)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.FieldIdsSize)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.FieldIdsOff)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.MethodIdsSize)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.MethodIdsOff)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.ClassDefsSize)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.ClassDefsOff)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.DataSize)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(file, binary.LittleEndian, &dex.Header.DataOff)
-	if err != nil {
-		return err
 	}
 	return nil
 }
