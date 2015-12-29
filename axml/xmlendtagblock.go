@@ -1,7 +1,7 @@
 package axml
 
 /*
- * Copyright (c) 2014 Floor Terra <floort@gmail.com>
+ * Copyright (c) 2015 Floor Terra <floort@gmail.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -24,43 +24,43 @@ import (
 )
 
 /* +------------------------------------+
- * | Type             uint32            |
- * | Size             uint32            |
- * +------------------------------------+
- * | +--------------------------------+ |
- * | | Id             uint32          | |
- * | +--------------------------------+ |
- * |      Repeat Size/4 - 2 times       |
- * +------------------------------------+
- * |
+ * | Type           uint32              |
+ * | Size           uint32              |
+ * | NsIdx          uint32              |
+ * | NameIdx        uint32              |
  * +------------------------------------+
  */
-type ResourceIdsBlock struct {
+
+type XmlEndTagBlock struct {
 	AxmlBlock
-	Ids []uint32
+	NsIdx   uint32
+	NameIdx uint32
 }
 
-func (b *ResourceIdsBlock) UnmarshalBinary(data []byte) error {
+func (b *XmlEndTagBlock) UnmarshalBinary(data []byte) error {
 	reader := bytes.NewReader(data)
 	if err := binary.Read(reader, binary.LittleEndian, &b.Type); err != nil {
 		return err
 	}
-	if b.Type != CHUNK_RESOURCEIDS {
-		return fmt.Errorf("Expected type=%X, got type=%X", CHUNK_RESOURCEIDS, b.Type)
-	}
 	if err := binary.Read(reader, binary.LittleEndian, &b.Size); err != nil {
 		return err
 	}
-	b.Ids = make([]uint32, b.Size/4-2)
-	for i := uint32(0); i < b.Size/4-2; i++ {
-		if err := binary.Read(reader, binary.LittleEndian, &b.Ids[i]); err != nil {
-			return err
-		}
+	if b.Type != CHUNK_XML_END_TAG {
+		return fmt.Errorf("Expected type=%X, got type=%X", CHUNK_XML_END_TAG, b.Type)
+	}
+	if err := binary.Read(reader, binary.LittleEndian, &b.NsIdx); err != nil {
+		return err
+	}
+	if err := binary.Read(reader, binary.LittleEndian, &b.NameIdx); err != nil {
+		return err
+	}
+	if b.Size != 16 {
+		return fmt.Errorf("Expected size=%d, got size=%d", 16, b.Size)
 	}
 	return nil
 }
 
-func (b ResourceIdsBlock) MarshalBinary() (data []byte, err error) {
+func (b XmlEndTagBlock) MarshalBinary() (data []byte, err error) {
 	buf := bytes.NewBuffer(nil)
 	if err := binary.Write(buf, binary.LittleEndian, &b.Type); err != nil {
 		return nil, err
@@ -68,22 +68,21 @@ func (b ResourceIdsBlock) MarshalBinary() (data []byte, err error) {
 	if err := binary.Write(buf, binary.LittleEndian, &b.Size); err != nil {
 		return nil, err
 	}
-	for i := range b.Ids {
-		if err := binary.Write(buf, binary.LittleEndian, &b.Ids[i]); err != nil {
-			return nil, err
-		}
+	if err := binary.Write(buf, binary.LittleEndian, &b.NsIdx); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(buf, binary.LittleEndian, &b.NameIdx); err != nil {
+		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-func ReadResourceIdsBlock(reader io.ReadSeeker, size uint32, offset int64) (rid ResourceIdsBlock, err error) {
-	rid.Type = CHUNK_RESOURCEIDS
-	rid.Size = size
-	rid.Offset = offset
-	reader.Seek(offset, 0)
-	rid.Ids = make([]uint32, size/4-2)
-	for i := uint32(0); i < size/4-2; i++ {
-		binary.Read(reader, binary.LittleEndian, &rid.Ids[i])
-	}
-	return rid, nil
+func ReadXmlEndTagBlock(reader io.ReadSeeker, size uint32, offset int64) (b XmlEndTagBlock, err error) {
+	b.Type = CHUNK_RESOURCEIDS
+	b.Size = size
+	b.Offset = offset
+	reader.Seek(offset+8, 0) // Skip Type and Size
+	binary.Read(reader, binary.LittleEndian, &b.NsIdx)
+	binary.Read(reader, binary.LittleEndian, &b.NameIdx)
+	return b, nil
 }

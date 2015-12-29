@@ -21,20 +21,27 @@ import (
 )
 
 type DEX struct {
-	Header    *DEXHeader
-	StringIds []StringIdItem
-	Strings   []string
-	TypeIds   []TypeIdItem
-	ProtoIds  []ProtoIdItem
-	FieldIds  []FieldIdItem
-	MethodIds []MethodIdItem
-	ClassDefs []ClassDefItem
-	Classes   []DexClass
+	Header      *DEXHeader
+	LinkSection []byte
+	StringIds   []StringIdItem
+	Strings     []string
+	TypeIds     []TypeIdItem
+	ProtoIds    []ProtoIdItem
+	FieldIds    []FieldIdItem
+	MethodIds   []MethodIdItem
+	ClassDefs   []ClassDefItem
+	DataSection []byte
+
+	Classes map[string]DexClass
 }
 
 func ReadDex(file io.ReadSeeker) (*DEX, error) {
 	dex := new(DEX)
 	err := dex.readHeader(file)
+	if err != nil {
+		return dex, err
+	}
+	err = dex.readLinkSection(file)
 	if err != nil {
 		return dex, err
 	}
@@ -63,6 +70,10 @@ func ReadDex(file io.ReadSeeker) (*DEX, error) {
 		return nil, err
 	}
 	err = dex.readClassDefs(file)
+	if err != nil {
+		return nil, err
+	}
+	err = dex.readDataSection(file)
 	if err != nil {
 		return nil, err
 	}

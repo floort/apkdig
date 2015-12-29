@@ -1,7 +1,7 @@
-package dex
+package axml
 
 /*
- * Copyright (c) 2014 Floor Terra <floort@gmail.com>
+ * Copyright (c) 2015 Floor Terra <floort@gmail.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -17,22 +17,23 @@ package dex
  */
 
 import (
-	"encoding/binary"
-	"io"
+	"testing"
 )
 
-type MethodIdItem struct {
-	ClassIdx uint16
-	ProtoIdx uint16
-	NameIdx  uint32
-}
-
-type Method struct {
-	Name string
-}
-
-func (dex *DEX) readMethodIds(file io.ReadSeeker) error {
-	file.Seek(int64(dex.Header.MethodIdsOff), 0)
-	dex.MethodIds = make([]MethodIdItem, dex.Header.MethodIdsSize)
-	return binary.Read(file, binary.LittleEndian, &dex.MethodIds)
+func TestMarshallUnmarshallXmlEndTagBlock(t *testing.T) {
+	a := XmlEndTagBlock{}
+	a.Type = CHUNK_XML_END_TAG
+	a.Size = 16
+	bytes, err := a.MarshalBinary()
+	if err != nil {
+		t.Errorf("Error marshaling block: %v", err)
+	}
+	b := &XmlEndTagBlock{}
+	err = b.UnmarshalBinary(bytes)
+	if err != nil {
+		t.Errorf("Error unmarshaling block: %v", err)
+	}
+	if a != *b {
+		t.Errorf("Struct changed during marshal+unmarshal")
+	}
 }

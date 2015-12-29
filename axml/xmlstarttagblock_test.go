@@ -1,4 +1,4 @@
-package dex
+package axml
 
 /*
  * Copyright (c) 2014 Floor Terra <floort@gmail.com>
@@ -17,40 +17,33 @@ package dex
  */
 
 import (
-	//"fmt"
 	"testing"
-
-	"github.com/floort/apkdig/apk"
-	//"github.com/floort/apkdig/axml"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
-func TestParseDex(t *testing.T) {
-	testfile := "../tests/Orbot-release-12.0.3.apk"
-	a, err := apk.OpenAPK(testfile)
+func TestMarshallUnmarshallXmlStartTagBlock(t *testing.T) {
+	a := XmlStartTagBlock{}
+	a.Type = CHUNK_XML_START_TAG
+	a.Size = 32
+	bytes, err := a.MarshalBinary()
 	if err != nil {
-		t.Errorf("Could not open %v: %v", testfile, err)
+		t.Errorf("Error marshaling block: %v", err)
 	}
-	file, err := a.OpenFile("classes.dex")
+	b := &XmlStartTagBlock{}
+	err = b.UnmarshalBinary(bytes)
 	if err != nil {
-		t.Errorf("Could not open classes.dex: %v", err)
+		t.Errorf("Error unmarshaling block: %v", err)
 	}
-	d, err := ReadDex(file)
-	if err != nil {
-		t.Errorf("Could not parse dex: %v", err)
+	if a.Type != b.Type || a.Size != b.Size || a.LineNumber != b.LineNumber ||
+		a.Skip != b.Skip || a.NsIdx != b.NsIdx || a.NameIdx != b.NameIdx ||
+		a.Flag != b.Flag || a.AttributeCount != b.AttributeCount {
+		t.Errorf("Struct changed during marshal+unmarshal")
 	}
-	spew.Dump(d.Classes)
-
-	/*manifestfile, err := a.OpenFile("AndroidManifest.xml")
-	if err != nil {
-		t.Errorf("Could not open manifest: %v", err)
+	if len(a.Attributes) != len(b.Attributes) {
+		t.Errorf("Struct changed during marshal+unmarshal")
 	}
-	manifest, err := axml.ReadAxml(manifestfile)
-	spew.Dump(manifest)
-	if err != nil {
-		t.Errorf("Error parsing AXML file: %v", err)
+	for i := range a.Attributes {
+		if a.Attributes[i] != b.Attributes[i] {
+			t.Errorf("Struct changed during marshal+unmarshal")
+		}
 	}
-	fmt.Printf("%#v\n", manifest)*/
-	a.Close()
 }

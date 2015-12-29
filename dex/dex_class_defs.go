@@ -34,9 +34,10 @@ type ClassDefItem struct {
 
 type DexClass struct {
 	ClassIdx    uint32
-	Name        string
 	AccessFlags uint32
 	SourceFile  string
+	Super       string
+	Methods     []Method
 }
 
 func (dex *DEX) readClassDefs(file io.ReadSeeker) error {
@@ -46,10 +47,23 @@ func (dex *DEX) readClassDefs(file io.ReadSeeker) error {
 }
 
 func (dex *DEX) parseDexClasses() {
-	dex.Classes = make([]DexClass, len(dex.ClassDefs))
+	dex.Classes = make(map[string]DexClass)
 	for n, c := range dex.ClassDefs {
-		dex.Classes[n].ClassIdx = uint32(n)
-		//dex.Classes[n].Name = dex.Strings[c.NameIdx]
-		dex.Classes[n].SourceFile = dex.Strings[c.SourceFileIdx]
+		name := dex.Strings[dex.TypeIds[c.ClassIdx]]
+		class := DexClass{
+			ClassIdx:    uint32(n),
+			AccessFlags: c.AccessFlags,
+			SourceFile:  dex.Strings[c.SourceFileIdx],
+			Super:       dex.Strings[dex.TypeIds[c.SuperclassIdx]],
+			Methods:     make([]Method, 0, 0),
+		}
+		dex.Classes[name] = class
+	}
+	for _, m := range dex.MethodIds {
+		classname := dex.Strings[dex.TypeIds[m.ClassIdx]]
+		class := dex.Classes[classname]
+		name := dex.Strings[m.NameIdx]
+		class.Methods = append(class.Methods, Method{Name: name})
+		dex.Classes[classname] = class
 	}
 }

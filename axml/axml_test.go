@@ -1,7 +1,7 @@
-package dex
+package axml
 
 /*
- * Copyright (c) 2014 Floor Terra <floort@gmail.com>
+ * Copyright (c) 2015 Floor Terra <floort@gmail.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -17,22 +17,18 @@ package dex
  */
 
 import (
-	"encoding/binary"
-	"io"
+	"io/ioutil"
+	"testing"
 )
 
-type MethodIdItem struct {
-	ClassIdx uint16
-	ProtoIdx uint16
-	NameIdx  uint32
-}
-
-type Method struct {
-	Name string
-}
-
-func (dex *DEX) readMethodIds(file io.ReadSeeker) error {
-	file.Seek(int64(dex.Header.MethodIdsOff), 0)
-	dex.MethodIds = make([]MethodIdItem, dex.Header.MethodIdsSize)
-	return binary.Read(file, binary.LittleEndian, &dex.MethodIds)
+func TestUnmarshalAxml(t *testing.T) {
+	b, err := ioutil.ReadFile("tests/AndroidManifest.xml")
+	if err != nil {
+		t.Errorf("Error reading axml file: %v", err)
+	}
+	a := &Axml{}
+	err = a.UnmarshalBinary(b)
+	if err != nil {
+		t.Errorf("Error unmarshaling axml: %v", err)
+	}
 }

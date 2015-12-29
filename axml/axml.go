@@ -86,7 +86,59 @@ type Axml struct {
 	Blocks   []GenericBlock
 }
 
-func ReadAxml(reader io.ReadSeeker) (axml Axml, err error) {
+func (a *Axml) UnmarshalBinary(data []byte) error {
+	reader := bytes.NewReader(data)
+	if err := binary.Read(reader, binary.LittleEndian, &a.Header); err != nil {
+		return err
+	}
+	if a.Header != CHUNK_AXML_FILE {
+		return errors.New("AXML file has wrong header")
+	}
+	if err := binary.Read(reader, binary.LittleEndian, &a.FileSize); err != nil {
+		return err
+	}
+	var blocktype, size uint32
+	for offset := int64(8); offset < int64(a.FileSize); {
+		if err := binary.Read(reader, binary.LittleEndian, &blocktype); err != nil {
+			return err
+		}
+		if err := binary.Read(reader, binary.LittleEndian, &size); err != nil {
+			return err
+		}
+		reader.Seek(-8, 1) // Seek back 8 bytes to the start of the block.
+		b := make([]byte, size)
+		_, err := io.ReadFull(reader, b)
+		if err != nil {
+			return err
+		}
+		var block GenericBlock
+		switch blocktype {
+		default:
+			return fmt.Errorf("Unkown Axml blocktype: %08X", blocktype)
+		case CHUNK_STRINGS:
+			block = new(StringsBlock)
+		case CHUNK_RESOURCEIDS:
+			block = new(ResourceIdsBlock)
+		case CHUNK_XML_START_NAMESPACE:
+			block = new(XmlStartNamespaceBlock)
+		case CHUNK_XML_START_TAG:
+			block = new(XmlStartTagBlock)
+		case CHUNK_XML_END_TAG:
+			block = new(XmlEndTagBlock)
+		case CHUNK_XML_END_NAMESPACE:
+			block = new(XmlEndNamespaceBlock)
+		}
+		if err = block.UnmarshalBinary(b); err != nil {
+			return err
+		}
+		a.Blocks = append(a.Blocks, block)
+		offset += int64(size)
+		reader.Seek(offset, 0)
+	}
+	return nil
+}
+
+/*func ReadAxml(reader io.ReadSeeker) (axml Axml, err error) {
 	binary.Read(reader, binary.LittleEndian, &axml.Header)
 	if axml.Header != CHUNK_AXML_FILE {
 		return axml, errors.New("AXML file has wrong header")
@@ -121,7 +173,7 @@ func ReadAxml(reader io.ReadSeeker) (axml Axml, err error) {
 		reader.Seek(offset, 0)
 	}
 	return axml, nil
-}
+}*/
 
 /*func (axml Axml) String() (s string) {
     xmlbuffer := new(bytes.Buffer)

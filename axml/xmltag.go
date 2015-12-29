@@ -20,18 +20,6 @@ import (
 	"io"
 )
 
-/* +------------------------------------+
- * | Type           uint32              |
- * | Size           uint32              |
- * | NsIdx          uint32              |
- * | NameIdx        uint32              |
- * +------------------------------------+
- */
-// https://github.com/android/platform_frameworks_base/blob/master/tools/aapt/XMLNode.cpp
-type XmlEndNamespaceBlock struct {
-	AxmlBlock
-}
-
 func ReadXmlEndNamespaceBlock(reader io.ReadSeeker, size uint32, offset int64) (b XmlEndNamespaceBlock, err error) {
 	b.Type = CHUNK_RESOURCEIDS
 	b.Size = size

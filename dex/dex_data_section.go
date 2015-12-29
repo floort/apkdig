@@ -21,18 +21,18 @@ import (
 	"io"
 )
 
-type MethodIdItem struct {
-	ClassIdx uint16
-	ProtoIdx uint16
-	NameIdx  uint32
-}
+func (dex *DEX) readDataSection(file io.ReadSeeker) error {
+	dex.DataSection = make([]byte, dex.Header.DataSize)
+	if dex.Header.DataSize > 0 {
+		_, err := file.Seek(int64(dex.Header.DataOff), 0)
+		if err != nil {
+			return err
+		}
+		err = binary.Read(file, binary.LittleEndian, dex.DataSection)
+		if err != nil {
+			return err
+		}
 
-type Method struct {
-	Name string
-}
-
-func (dex *DEX) readMethodIds(file io.ReadSeeker) error {
-	file.Seek(int64(dex.Header.MethodIdsOff), 0)
-	dex.MethodIds = make([]MethodIdItem, dex.Header.MethodIdsSize)
-	return binary.Read(file, binary.LittleEndian, &dex.MethodIds)
+	}
+	return nil
 }

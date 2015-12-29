@@ -1,7 +1,7 @@
 package axml
 
 /*
- * Copyright (c) 2014 Floor Terra <floort@gmail.com>
+ * Copyright (c) 2014, 2015 Floor Terra <floort@gmail.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -17,6 +17,7 @@ package axml
  */
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -53,6 +54,62 @@ type StringsBlock struct {
 	StylesOffset     uint32
 	DataOffset       []uint32
 	Strings          []string
+}
+
+func (b *StringsBlock) UnmarshalBinary(data []byte) error {
+	reader := bytes.NewReader(data)
+	if err := binary.Read(reader, binary.LittleEndian, &b.Type); err != nil {
+		return err
+	}
+	if err := binary.Read(reader, binary.LittleEndian, &b.Size); err != nil {
+		return err
+	}
+	if b.Type != CHUNK_STRINGS {
+		return fmt.Errorf("Expected type=%X, got type=%X", CHUNK_STRINGS, b.Type)
+	}
+	if err := binary.Read(reader, binary.LittleEndian, &b.NStrings); err != nil {
+		return err
+	}
+	if err := binary.Read(reader, binary.LittleEndian, &b.StyleOffsetCount); err != nil {
+		return err
+	}
+	if err := binary.Read(reader, binary.LittleEndian, &b.Flags); err != nil {
+		return err
+	}
+	if err := binary.Read(reader, binary.LittleEndian, &b.StringDataOffset); err != nil {
+		return err
+	}
+	if err := binary.Read(reader, binary.LittleEndian, &b.StylesOffset); err != nil {
+		return err
+	}
+	b.DataOffset = make([]uint32, b.NStrings)
+	for i := uint32(0); i < b.NStrings; i++ {
+		if err := binary.Read(reader, binary.LittleEndian, &b.DataOffset[i]); err != nil {
+			return err
+		}
+	}
+	nbytes := 28 + b.NStrings*4
+	if 0 != (b.Flags & UTF8_FLAG) {
+		// String will be in UTF-8 encoding
+		return fmt.Errorf("Strings are encoded in UTF-8: not implemented")
+	} else {
+		// String will be in UTF-16LE encoding
+		for i := uint32(0); i < b.NStrings; i++ {
+			var size uint16
+			binary.Read(reader, binary.LittleEndian, &size)
+			stringbytes := make([]uint16, size)
+			binary.Read(reader, binary.LittleEndian, &stringbytes)
+			b.Strings = append(b.Strings, string(utf16.Decode(stringbytes)))
+			if i != b.NStrings-1 {
+				reader.Seek(2, 1) // Skip 0x0000 on all but the last string
+			}
+			nbytes += 2 + uint32(size)
+		}
+	}
+	if b.Size != nbytes {
+		return fmt.Errorf("Expected size=%d, got size=%d", nbytes, b.Size)
+	}
+	return nil
 }
 
 func ReadStringsBlock(reader io.ReadSeeker, size uint32, offset int64) (b StringsBlock, err error) {

@@ -22,6 +22,7 @@ type GenericBlock interface {
 	GetType() uint32
 	GetSize() uint32
 	GetOffset() int64
+	UnmarshalBinary([]byte) error
 }
 
 type AxmlBlock struct {
