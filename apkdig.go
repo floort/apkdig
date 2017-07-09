@@ -116,12 +116,52 @@ func DexStrings(args []string) (err error) {
 	}
 }
 
+func Code(args []string) (err error) {
+	if len(args) == 0 {
+		return ERR_NOARGS
+	}
+	if len(args) == 1 {
+		return errors.New("No file specified.")
+	}
+	if len(args) > 2 {
+		return ERR_TOOMANYARGS
+	}
+	if args[1] == "-h" {
+		// Print help information
+		fmt.Println(args[0], "-h\t\tPrint usage.")
+		fmt.Println(args[0], "[filename]\tPrint classes and methods in dex file.")
+		return nil
+	} else {
+		a, err := apk.OpenAPK(args[1])
+		if err != nil {
+			return err
+		}
+		defer a.Close()
+		dexfile, err := a.OpenFile("classes.dex")
+		if err != nil {
+			return err
+		}
+		dx, err := dex.ReadDex(dexfile)
+		if err != nil {
+			return err
+		}
+		for classname, class := range dx.Classes {
+			fmt.Println(classname)
+			for _, method := range class.Methods {
+				fmt.Printf("\t%s\n", method.Name)
+			}
+		}
+		return nil
+	}
+}
+
 func main() {
 	// Fill Commands table
 	COMMANDS["?"] = Help
 	COMMANDS["help"] = Help
 	COMMANDS["manifest"] = Manifest
 	COMMANDS["dexstrings"] = DexStrings
+	COMMANDS["code"] = Code
 	if len(os.Args) == 1 {
 		// No arguments are given; print help
 		_ = Help([]string{"help"})

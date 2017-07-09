@@ -35,6 +35,13 @@ type DEX struct {
 	Classes map[string]DexClass
 }
 
+func (d *DEX) GetString(stringIdx uint32) string {
+	if stringIdx == 4294967295 {
+		return ""
+	}
+	return d.Strings[stringIdx]
+}
+
 func ReadDex(file io.ReadSeeker) (*DEX, error) {
 	dex := new(DEX)
 	err := dex.readHeader(file)

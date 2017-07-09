@@ -19,6 +19,7 @@ package dex
 import (
 	"encoding/binary"
 	"io"
+	"fmt"
 )
 
 type ClassDefItem struct {
@@ -50,10 +51,11 @@ func (dex *DEX) parseDexClasses() {
 	dex.Classes = make(map[string]DexClass)
 	for n, c := range dex.ClassDefs {
 		name := dex.Strings[dex.TypeIds[c.ClassIdx]]
+		fmt.Println(c.SourceFileIdx)
 		class := DexClass{
 			ClassIdx:    uint32(n),
 			AccessFlags: c.AccessFlags,
-			SourceFile:  dex.Strings[c.SourceFileIdx],
+			SourceFile:  dex.GetString(c.SourceFileIdx),
 			Super:       dex.Strings[dex.TypeIds[c.SuperclassIdx]],
 			Methods:     make([]Method, 0, 0),
 		}
