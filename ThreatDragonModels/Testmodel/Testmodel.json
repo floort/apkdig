@@ -1,0 +1,16 @@
+{
+  "summary": {
+    "title": "Testmodel",
+    "owner": "Floor"
+  },
+  "detail": {
+    "contributors": [],
+    "diagrams": [
+      {
+        "title": "Test diagram",
+        "thumbnail": "./public/content/images/thumbnail.jpg",
+        "id": 0
+      }
+    ]
+  }
+}
